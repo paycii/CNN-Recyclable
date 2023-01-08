@@ -1,0 +1,124 @@
+<html>
+  <head>
+    <title>Image Classification</title>
+    <style>
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      input[type="file"] {
+        margin-bottom: 1em;
+      }
+      input[type="submit"] {
+        padding: 0.5em 1em;
+        background-color: blue;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1em;
+        cursor: pointer;
+      }
+      .prediction-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  height: 200px;
+}
+
+.prediction {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.prediction img {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+.prediction h1 {
+  font-size: 18px;
+}
+
+.recyclable {
+  color: green;
+}
+
+.not-recyclable {
+  color: red;
+}
+    </style>
+  </head>
+  <body>
+    <form id="form" method="POST" enctype="multipart/form-data">
+      <input type="file" name="images" multiple>
+      <input type="submit" value="Predict">
+    </form>
+    <div id="prediction" class="prediction-container"></div>
+    <script>
+      function predict(images) {
+        // Send the images to the server
+        const formData = new FormData();
+        let i = 0;
+        for (const image of images) {
+          formData.append('images', image);
+        }
+        fetch('/predict', {
+          method: 'POST',
+          body: formData,
+        })
+                .then(response => response.json())
+                .then(predictions => {
+                  // Update the page with the predictions
+                  document.getElementById('prediction').innerHTML = predictions
+                          .map(prediction => {
+                            // const src = `data:image/jpeg;base64,${prediction.base64String[i]}`;
+                            const src = `data:image/jpeg;base64,${prediction.base64_string}`;
+
+                            // const objectURL = URL.createObjectURL(images[i]);
+                            i++;
+                            if (prediction.prediction == 'Recyclable') {
+                              return `
+          <div class="prediction">
+            <img src="${src}" alt="Recyclable image">
+            <h1 class="recyclable">Recyclable</h1>
+          </div>
+        `;
+                            }
+                            else {
+                              return `
+          <div class="prediction">
+            <img src="${src}" alt="Not recyclable image">
+            <h1 class="not-recyclable">Not recyclable</h1>
+          </div>
+        `
+
+
+                            }
+                          })
+                          .join('');
+                });
+      }
+
+      // Listen for form submissions
+      document.getElementById('form').addEventListener('submit', event => {
+        // Prevent the form from navigating to a new page
+        event.preventDefault();
+
+        // Get the image files
+        //const images = new FormData(event.target).get('images');
+        const images = Array.from(new FormData(event.target).getAll('images'));
+        // Predict the images
+        predict(images);
+      });
+    </script>
+  </body>
+</html>
